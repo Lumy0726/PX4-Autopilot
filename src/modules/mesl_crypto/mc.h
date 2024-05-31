@@ -10,6 +10,8 @@
 typedef uint8_t byte;
 
 
+void dump(byte* buf, int len);
+
 int Init_SE();
 
 int Generate_AES128Key(int keyNum);

@@ -1,5 +1,0 @@
-menuconfig EXAMPLES_PX4_SIMPLE_APP
- bool "mesl_crypto"
- default n
- ---help---
-     Enable support for mesl_crypto

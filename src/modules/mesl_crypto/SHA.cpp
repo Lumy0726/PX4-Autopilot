@@ -1,10 +1,10 @@
 #include "SHA.h"
 
 uint8_t hex[256];
-uint8_t data[256];
+//uint8_t data[256];
 int start = 0;
 int seconds = 0;
-uint8_t hash[32];
+//uint8_t hash[32];
 char* pin;
 #define SHA256_BLOCK_SIZE 32
 
@@ -150,6 +150,8 @@ uint8_t* btoh(uint8_t* dest, uint8_t* src, int len) {
 }
 
 uint8_t* SHA256(uint8_t* data) {
+
+    uint8_t hash[32];
 
     uint8_t* data_buffer = (uint8_t*)malloc(sizeof(uint8_t) * strlen((char *)data));
 

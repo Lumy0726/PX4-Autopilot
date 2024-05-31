@@ -30,20 +30,26 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 ############################################################################
-set(config_module_list_external
-    modules/mesl_crypto
-    PARENT_SCOPE
-    )
+
+#set(config_module_list_external
+#    modules/mesl_crypto
+#    PARENT_SCOPE
+#    )
 
 px4_add_module(
 	MODULE modules__mesl_crypto
 	MAIN mesl_crypto
 	SRCS
 		AES.cpp
+		AES.h
+		AES_config.h
 		mc.cpp
+		mc.h
 		RSA.cpp
+		RSA.h
 		SHA.cpp
-		test.cpp
+		SHA.h
+		mesl_crypto_main.cpp
+		mesl_crypto_main.h
 	DEPENDS
-	EXTERNAL
 	)

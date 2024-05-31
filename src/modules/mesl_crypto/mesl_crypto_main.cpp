@@ -1,15 +1,16 @@
-#include "test.h"
+#include "mesl_crypto_main.h"
 
-void dump(uint8_t* buf, int len) {
-	int i;
+#include <nuttx/config.h>
+#include <px4_platform_common/log.h>
 
-	for (i = 0; i < len; i++) {
-		printf("%c",(uint8_t)buf[i]);
-	}
-	printf("\n");
-}
+#include <stdio.h>
+#include <errno.h>
 
-void test() {
+//__EXPORT void mesl_crypto_main(int argc, char *argv[]);
+
+extern "C" __EXPORT int mesl_crypto_main(int argc, char *argv[]) {
+
+	PX4_INFO("Successful: Executed MESL CRYPTO MODULE");
 
 	if (!Init_SE())
 		printf("SE Connection Failure");
@@ -37,7 +38,7 @@ void test() {
 	//Test AES-128
 
 	int AES_key_num = 0x0;
-	
+
 	uint8_t AES_enc_data[64];
 	int AES_enc_len;
 
@@ -106,10 +107,13 @@ void test() {
 	printf("sign_data: ");
 	dump(RSA_sign_data, 128);
 
-	if (Verify_RSA1024(RSA_key, RSA_sign_data, RSA_sign_len, plain_data, &plain_len))
+	if (Verify_RSA1024(RSA_key, RSA_sign_data, RSA_sign_len, plain_data, &plain_len)){
 		printf("Verify Success\n");
+	}
 	else
+	{
 		printf("RSA 1024 Failure");
+	}
 
-
+	return 0;
 }

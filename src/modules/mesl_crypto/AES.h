@@ -73,7 +73,7 @@ class AES
 	 *  @Return 0 if SUCCESS or -1 if FAILURE
 	 *
 	 */
-	byte cbc_encrypt (byte * plain, byte * cipher, int n_block, byte iv [N_BLOCK]) ;
+	//byte cbc_encrypt (byte * plain, byte * cipher, int n_block, byte iv [N_BLOCK]) ;
 
 	/** CBC encrypt a number of blocks (input and return an IV).
 	 *
@@ -109,7 +109,7 @@ class AES
 	 *  @Return 0 if SUCCESS or -1 if FAILURE
 	 *
 	 */
-	byte cbc_decrypt (byte * cipher, byte * plain, int n_block, byte iv [N_BLOCK]) ;
+	//byte cbc_decrypt (byte * cipher, byte * plain, int n_block, byte iv [N_BLOCK]) ;
 
 	/** CBC decrypt a number of blocks (input and return an IV)
 	 *
@@ -222,7 +222,7 @@ class AES
 	 * @param ivl[N_BLOCK] the initialization vector IV that will be used for encryption.
 	 * @note The key will be stored in class variable.
 	 */
-	void do_aes_encrypt(byte *plain,int size_p,byte *cipher,byte *key, int bits, byte ivl [N_BLOCK]);
+	//void do_aes_encrypt(byte *plain,int size_p,byte *cipher,byte *key, int bits, byte ivl [N_BLOCK]);
 
 	/** User friendly implementation of AES-CBC encryption.
 	 *
@@ -245,7 +245,7 @@ class AES
 	 * @param ivl[N_BLOCK] the initialization vector IV that will be used for decryption.
 	 * @note The key will be stored in class variable.
 	 */
-	void do_aes_decrypt(byte *cipher,int size_c,byte *plain,byte *key, int bits, byte ivl [N_BLOCK]);
+	//void do_aes_decrypt(byte *cipher,int size_c,byte *plain,byte *key, int bits, byte ivl [N_BLOCK]);
 
 	/** User friendly implementation of AES-CBC decryption.
 	 *

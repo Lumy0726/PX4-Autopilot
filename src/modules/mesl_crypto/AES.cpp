@@ -357,19 +357,19 @@ byte AES::encrypt (byte plain [N_BLOCK], byte cipher [N_BLOCK])
 
 /******************************************************************************/
 
-byte AES::cbc_encrypt (byte * plain, byte * cipher, int n_block, byte iv [N_BLOCK])
-{
-  while (n_block--)
-    {
-      xor_block (iv, plain) ;
-      if (encrypt (iv, iv) != SUCCESS)
-        return FAILURE ;
-      copy_n_bytes (cipher, iv, N_BLOCK) ;
-      plain  += N_BLOCK ;
-      cipher += N_BLOCK ;
-    }
-  return SUCCESS ;
-}
+// byte AES::cbc_encrypt (byte * plain, byte * cipher, int n_block, byte iv [N_BLOCK])
+// {
+//   while (n_block--)
+//     {
+//       xor_block (iv, plain) ;
+//       if (encrypt (iv, iv) != SUCCESS)
+//         return FAILURE ;
+//       copy_n_bytes (cipher, iv, N_BLOCK) ;
+//       plain  += N_BLOCK ;
+//       cipher += N_BLOCK ;
+//     }
+//   return SUCCESS ;
+// }
 
 /******************************************************************************/
 
@@ -412,21 +412,21 @@ byte AES::decrypt (byte plain [N_BLOCK], byte cipher [N_BLOCK])
 
 /******************************************************************************/
 
-byte AES::cbc_decrypt (byte * cipher, byte * plain, int n_block, byte iv [N_BLOCK])
-{
-  while (n_block--)
-    {
-      byte tmp [N_BLOCK] ;
-      copy_n_bytes (tmp, cipher, N_BLOCK) ;
-      if (decrypt (cipher, plain) != SUCCESS)
-        return FAILURE ;
-      xor_block (plain, iv) ;
-      copy_n_bytes (iv, tmp, N_BLOCK) ;
-      plain  += N_BLOCK ;
-      cipher += N_BLOCK;
-    }
-  return SUCCESS ;
-}
+// byte AES::cbc_decrypt (byte * cipher, byte * plain, int n_block, byte iv [N_BLOCK])
+// {
+//   while (n_block--)
+//     {
+//       byte tmp [N_BLOCK] ;
+//       copy_n_bytes (tmp, cipher, N_BLOCK) ;
+//       if (decrypt (cipher, plain) != SUCCESS)
+//         return FAILURE ;
+//       xor_block (plain, iv) ;
+//       copy_n_bytes (iv, tmp, N_BLOCK) ;
+//       plain  += N_BLOCK ;
+//       cipher += N_BLOCK;
+//     }
+//   return SUCCESS ;
+// }
 
 /******************************************************************************/
 
@@ -552,17 +552,17 @@ void AES::printArray(byte output[],int sizel)
 
 /******************************************************************************/
 
-void AES::do_aes_encrypt(byte *plain,int size_p,byte *cipher,byte *key, int bits, byte ivl [N_BLOCK]){
-	calc_size_n_pad(size_p);
+// void AES::do_aes_encrypt(byte *plain,int size_p,byte *cipher,byte *key, int bits, byte ivl [N_BLOCK]){
+// 	calc_size_n_pad(size_p);
 
-	//byte plain_p[get_size()];
-    int arr_size = get_size();
-    uint8_t* plain_p = (uint8_t*)malloc(arr_size * sizeof(uint8_t));
-	padPlaintext(plain, plain_p);
-	int blocks = get_size() / N_BLOCK;
-	set_key (key, bits) ;
-	cbc_encrypt(plain_p, cipher, blocks, ivl);
-}
+// 	//byte plain_p[get_size()];
+//     int arr_size = get_size();
+//     uint8_t* plain_p = (uint8_t*)malloc(arr_size * sizeof(uint8_t));
+// 	padPlaintext(plain, plain_p);
+// 	int blocks = get_size() / N_BLOCK;
+// 	set_key(key, bits);
+// 	cbc_encrypt(plain_p, cipher, blocks, ivl);
+// }
 
 /******************************************************************************/
 
@@ -579,12 +579,12 @@ void AES::do_aes_encrypt(byte *plain,int size_p,byte *cipher,byte *key, int bits
 
 /******************************************************************************/
 
-void AES::do_aes_decrypt(byte *cipher,int size_c,byte *plain,byte *key, int bits, byte ivl [N_BLOCK]){
-	set_size(size_c);
-	int blocks = size_c / N_BLOCK;
-	set_key (key, bits);
-	cbc_decrypt (cipher,plain, blocks, ivl);
-}
+// void AES::do_aes_decrypt(byte *cipher,int size_c,byte *plain,byte *key, int bits, byte ivl [N_BLOCK]){
+// 	set_size(size_c);
+// 	int blocks = size_c / N_BLOCK;
+// 	set_key (key, bits);
+// 	cbc_decrypt (cipher,plain, blocks, ivl);
+// }
 
 /******************************************************************************/
 

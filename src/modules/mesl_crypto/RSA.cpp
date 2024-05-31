@@ -51,7 +51,7 @@ void RSA::decrypt(uint8_t* plainText, int* plainLen, uint8_t* cipherText, int ci
     int ctr = 0;
 
     //re-assemble char array to array of int
-    int i = 0;
+    unsigned int i = 0;
     for (i = 0; i <= cipherLen / sizeof(int); i++) {
         ctr = i * sizeof(int);
         temp = (((unsigned char)cipherText[ctr + 1] << 8) | (unsigned char)cipherText[ctr]);
