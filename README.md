@@ -28,7 +28,7 @@ AES, SHA256, RSA1024 등 암호화 모듈이 적용된 PX4 package
 * 모듈 경로 :  
 `/module/mesl_crypto`
 
-* Git clone 후 :
+* Git clone 후 :  
 `git remote add upstream https://github.com/PX4/PX4-Autopilot.git`  
 `git fetch upstream`  
 `git fetch upstream --tags`  
