@@ -50,7 +50,8 @@
 int publicKey[2] = { 14351, 11 };
 int privateKey[2] = { 14351, 1283 };
 
-byte AES_key[MAX_AES_KEY_IDX][16] = {};
+byte AES_key[MAX_AES_KEY_IDX][16] = { 0x7C, 0x85, 0x20, 0x89, 0xFF, 0xDB, 0x16, 0x12, 0x6D, 0xBE, 0xE7, 0xC9, 0x68, 0xA7, 0x51, 0xB5 };
+
 
 void dump(byte* buf, int len) {
 	int i;
@@ -66,9 +67,11 @@ int Init_SE() {
 }
 
 int Generate_AES128Key(int keyNum) {
+    /*
 	for (int i = 0; i < MAX_AES_KEY_SIZE; i++) {
 		AES_key[keyNum][i] = rand() % 255;
 	}
+	*/
 	return 1;
 }
 

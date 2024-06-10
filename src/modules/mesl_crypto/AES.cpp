@@ -230,25 +230,30 @@ static void inv_mix_sub_columns (byte dt[N_BLOCK], byte st[N_BLOCK])
 /******************************************************************************/
 
 AES::AES(){
-	byte ar_iv[8] = { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x01 };
-	memcpy(iv,ar_iv,8);
-	memcpy(iv+8,ar_iv,8);
- 	arr_pad[0] = 0x01;
-	arr_pad[1] = 0x02;
-	arr_pad[2] = 0x03;
-	arr_pad[3] = 0x04;
-	arr_pad[4] = 0x05;
-	arr_pad[5] = 0x06;
-	arr_pad[6] = 0x07;
-	arr_pad[7] = 0x08;
-	arr_pad[8] = 0x09;
-	arr_pad[9] = 0x0a;
-	arr_pad[10] = 0x0b;
-	arr_pad[11] = 0x0c;
-	arr_pad[12] = 0x0d;
-	arr_pad[13] = 0x0e;
-	arr_pad[14] = 0x0f;
-	arr_pad[15] = 0x10;
+    /*
+    byte ar_iv[8] = { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x01 };
+    memcpy(iv,ar_iv,8);
+    memcpy(iv+8,ar_iv,8);
+*/
+    byte ar_iv[16] = { 0xB3, 0xBA, 0xD6, 0x1A, 0xEA, 0xDA, 0x40, 0x90, 0x8F, 0x53, 0xEA, 0x02, 0x61, 0x42, 0x49, 0xA9 };
+    memcpy(iv, ar_iv, 16);
+
+    arr_pad[0] = 0x01;
+    arr_pad[1] = 0x02;
+    arr_pad[2] = 0x03;
+    arr_pad[3] = 0x04;
+    arr_pad[4] = 0x05;
+    arr_pad[5] = 0x06;
+    arr_pad[6] = 0x07;
+    arr_pad[7] = 0x08;
+    arr_pad[8] = 0x09;
+    arr_pad[9] = 0x0a;
+    arr_pad[10] = 0x0b;
+    arr_pad[11] = 0x0c;
+    arr_pad[12] = 0x0d;
+    arr_pad[13] = 0x0e;
+    arr_pad[14] = 0x0f;
+    arr_pad[15] = 0x10;
 }
 
 /******************************************************************************/
@@ -448,19 +453,19 @@ byte AES::cbc_decrypt (byte * cipher, byte * plain, int n_block)
 
 /*****************************************************************************/
 
-void AES::set_IV(unsigned long long int IVCl){
-	memcpy(iv,&IVCl,8);
-	memcpy(iv+8,&IVCl,8);
-	IVC = IVCl;
-}
+//void AES::set_IV(unsigned long long int IVCl){
+//	memcpy(iv,&IVCl,8);
+//	memcpy(iv+8,&IVCl,8);
+//	IVC = IVCl;
+//}
 
 /******************************************************************************/
 
-void AES::iv_inc(){
-	IVC += 1;
-	memcpy(iv,&IVC,8);
-	memcpy(iv+8,&IVC,8);
-}
+//void AES::iv_inc(){
+//	IVC += 1;
+//	memcpy(iv,&IVC,8);
+//	memcpy(iv+8,&IVC,8);
+//}
 
 /******************************************************************************/
 
