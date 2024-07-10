@@ -126,6 +126,9 @@ static pthread_mutex_t file_mutex  =
 # include "parameters_remote.h"
 #endif // CONFIG_PARAM_REMOTE
 
+#include <modules/mesl_crypto/mc.h>
+int n = 0;
+
 void
 param_init()
 {
@@ -840,7 +843,58 @@ int param_save_default(bool blocking)
 
 		// backup file
 		if (param_backup_file) {
-			int fd_backup_file = ::open(param_backup_file, O_WRONLY | O_CREAT | O_TRUNC, PX4_O_MODE_666);
+			int fd_backup_file = ::open(param_backup_file, O_RDWR | O_CREAT | O_TRUNC, PX4_O_MODE_666);
+
+			lseek(fd_backup_file, -16, SEEK_END);
+			byte* ver_buf = (byte*)malloc(16);
+			ssize_t ver_bytes_read = ::read(fd_backup_file, ver_buf, 16);
+			if (ver_bytes_read == -1) {
+			    PX4_ERR("Verify data read error!\n");
+			}
+			lseek(fd_backup_file, 0, SEEK_SET);
+
+			int i, j = 0;
+			for (i = 0; i < 14; i++) {
+			    if (ver_buf[i] == 0x00 && ver_buf[i + 1] == 0x00 && ver_buf[i + 2] == 0x00) {
+				j = 1;
+			    }
+			}
+			free(ver_buf);
+
+			if (j == 0) {
+			    int buf_size = lseek(fd_backup_file, 0, SEEK_END);
+			    lseek(fd_backup_file, 0, SEEK_SET);
+
+			    int length;
+			    byte* org_buf = (byte*)malloc(buf_size);
+			    byte* enc_buf = (byte*)malloc(buf_size);
+
+			    ssize_t pm_read = ::read(fd_backup_file, enc_buf, buf_size);
+			    if (pm_read == -1)
+				PX4_ERR("Parameter read error!\n");
+
+			    Decrypt_AES128(16, enc_buf, buf_size, org_buf, &length);
+
+			    i = 0; j = 0;
+			    for (i = buf_size - 16 - 4; i < buf_size - 2; i++) {
+				if (org_buf[i] == 0x00 && org_buf[i + 1] == 0x00 && org_buf[i + 2] == 0x00) {
+				    j = buf_size - i - 3;
+				}
+			    }
+
+			    lseek(fd_backup_file, 0, SEEK_SET);
+			    ssize_t pm_write = ::write(fd_backup_file, org_buf, buf_size);
+			    if (pm_write == -1)
+				PX4_ERR("Parameter write error!\n");
+
+			    int cut = ftruncate(fd_backup_file, buf_size - j);
+			    if (cut == -1)
+				PX4_ERR("Cut error!\n");
+
+			    lseek(fd_backup_file, 0, SEEK_SET);
+			    free(org_buf);
+			    free(enc_buf);
+			}
 
 			if (fd_backup_file > -1) {
 				int backup_export_ret = param_export_internal(fd_backup_file, nullptr);
@@ -855,6 +909,36 @@ int param_save_default(bool blocking)
 					param_verify(fd_verify);
 					::close(fd_verify);
 				}
+
+				if (n > 0) {
+				    int file = open(param_backup_file, O_RDWR);
+				    int buf_size = lseek(file, 0, SEEK_END);
+				    lseek(file, 0, SEEK_SET);
+
+				    int pad = 0;
+				    if (buf_size % 16 != 0) {
+					pad = 16 - buf_size % 16;
+				    }
+				    byte* org_buf = (byte*)malloc(buf_size);
+				    byte* enc_buf = (byte*)malloc(buf_size + pad);
+
+				    ssize_t pm_read = ::read(file, org_buf, buf_size);
+				    if (pm_read == -1)
+					PX4_ERR("Parameter(enc) read error!\n");
+
+				    int length;
+				    Encrypt_AES128(16, org_buf, buf_size, enc_buf, &length);
+
+				    lseek(file, 0, SEEK_SET);
+				    ssize_t pm_write = ::write(file, enc_buf, buf_size + pad);
+				    if (pm_write == -1)
+					PX4_ERR("Parameter(enc) write error!\n");
+
+				    free(org_buf);
+				    free(enc_buf);
+				    close(file);
+				}
+				n = 1;
 			}
 		}
 	}

@@ -60,6 +60,8 @@
 #include <parameters/param.h>
 #include "systemlib/err.h"
 
+#include <modules/mesl_crypto/mc.h>
+
 __BEGIN_DECLS
 __EXPORT int param_main(int argc, char *argv[]);
 __END_DECLS
@@ -444,6 +446,57 @@ do_load(const char *param_file_name)
 			PX4_ERR("open '%s' failed (%i)", param_file_name, errno);
 			return 1;
 		}
+	}
+
+	lseek(fd, -16, SEEK_END);
+	byte* ver_buf = (byte*)malloc(16);
+	ssize_t ver_bytes_read = ::read(fd, ver_buf, 16);
+	if (ver_bytes_read == -1) {
+	    PX4_ERR("Verify data(first) read error!\n");
+	}
+	lseek(fd, 0, SEEK_SET);
+
+	int i, j = 0;
+	for (i = 0; i < 14; i++) {
+	    if (ver_buf[i] == 0x00 && ver_buf[i + 1] == 0x00 && ver_buf[i + 2] == 0x00) {
+		j = 1;
+	    }
+	}
+	free(ver_buf);
+
+	if (j == 0) {
+	    int buf_size = lseek(fd, 0, SEEK_END);
+	    lseek(fd, 0, SEEK_SET);
+
+	    int length;
+	    byte* org_buf = (byte*)malloc(buf_size);
+	    byte* enc_buf = (byte*)malloc(buf_size);
+
+	    ssize_t pm_read = ::read(fd, enc_buf, buf_size);
+	    if (pm_read == -1)
+		PX4_ERR("Parameter(first) read error!\n");
+
+	    Decrypt_AES128(16, enc_buf, buf_size, org_buf, &length);
+
+	    i = 0; j = 0;
+	    for (i = buf_size - 16 - 4; i < buf_size - 2; i++) {
+		if (org_buf[i] == 0x00 && org_buf[i + 1] == 0x00 && org_buf[i + 2] == 0x00) {
+		    j = buf_size - i - 3;
+		}
+	    }
+
+	    lseek(fd, 0, SEEK_SET);
+	    ssize_t pm_write = ::write(fd, org_buf, buf_size);
+	    if (pm_write == -1)
+		PX4_ERR("Parameter(first) write error!\n");
+
+	    int cut = ftruncate(fd, buf_size - j);
+	    if (cut == -1)
+		PX4_ERR("Cut(first) error!\n");
+
+	    lseek(fd, 0, SEEK_SET);
+	    free(org_buf);
+	    free(enc_buf);
 	}
 
 	int result = param_load(fd);

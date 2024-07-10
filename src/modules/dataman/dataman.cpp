@@ -57,11 +57,16 @@
 #include <uORB/topics/dataman_request.h>
 #include <uORB/topics/dataman_response.h>
 
+#include <modules/mesl_crypto/mc.h>
+#include <modules/mesl_crypto/SHA.h>
+
 #include "dataman.h"
 
 __BEGIN_DECLS
 __EXPORT int dataman_main(int argc, char *argv[]);
 __END_DECLS
+
+unsigned size;
 
 static constexpr int TASK_STACK_SIZE = 1420;
 
@@ -543,6 +548,44 @@ _file_initialize(unsigned max_offset)
 		return -1;
 	}
 
+	dm_operations_data.file.fd = open(k_data_manager_device_path, O_RDWR | O_CREAT | O_BINARY, PX4_O_MODE_666);
+
+	lseek(dm_operations_data.file.fd, -7, SEEK_END);
+	byte ver_buf[3];
+	ssize_t ver_bytes_read = ::read(dm_operations_data.file.fd, ver_buf, 3);
+	if (ver_bytes_read == -1)
+	    PX4_ERR("Verify data read error!\n");
+	lseek(dm_operations_data.file.fd, 0, SEEK_SET);
+
+	if (!((ver_buf[0] == 0x61 && ver_buf[2] == 0x38) || (ver_buf[0] == 0x00 && ver_buf[2] == 0x00))) {
+	    int block_size = 64;
+	    byte* dec_buf = (byte*)malloc(block_size);
+	    byte* enc_buf = (byte*)malloc(block_size);
+
+	    int i = 0, delete_len = 0, length;
+	    while (i < (int)max_offset) {
+		if (i > (int)max_offset - block_size) {
+		    delete_len = block_size - (int)max_offset % block_size;
+		}
+
+		ssize_t enc_bytes_read = ::read(dm_operations_data.file.fd, enc_buf, block_size - delete_len);
+		if (enc_bytes_read == -1)
+		    PX4_ERR("Dataman(enc) read error!\n");
+
+		lseek(dm_operations_data.file.fd, i, SEEK_SET);
+		Decrypt_AES128(16, enc_buf, block_size - delete_len, dec_buf, &length);
+
+		ssize_t dec_bytes_write = ::write(dm_operations_data.file.fd, dec_buf, block_size - delete_len);
+		if (dec_bytes_write == -1)
+		    PX4_ERR("Dataman(enc) write error!\n");
+
+		i += block_size;
+	    }
+	    lseek(dm_operations_data.file.fd, 0, SEEK_SET);
+	    free(dec_buf);
+	    free(enc_buf);
+	}
+
 	if ((unsigned)lseek(dm_operations_data.file.fd, max_offset, SEEK_SET) != max_offset) {
 		close(dm_operations_data.file.fd);
 		PX4_WARN("Could not seek data manager file %s", k_data_manager_device_path);
@@ -617,6 +660,35 @@ _ram_initialize(unsigned max_offset)
 static void
 _file_shutdown()
 {
+	lseek(dm_operations_data.file.fd, 0, SEEK_SET);
+
+	int block_size = 64;
+	byte* org_buf = (byte*)malloc(block_size);
+	byte* enc_buf = (byte*)malloc(block_size);
+
+	int length;
+	int i = 0, delete_len = 0;
+	while (i < (int)size) {
+	    if (i > (int)size - block_size) {
+		delete_len = block_size - (int)size % block_size;
+	    }
+
+	    ssize_t bytes_read = ::read(dm_operations_data.file.fd, org_buf, block_size - delete_len);
+	    if (bytes_read == -1)
+		PX4_ERR("Dataman(org) read error!\n");
+
+	    lseek(dm_operations_data.file.fd, i, SEEK_SET);
+	    Encrypt_AES128(16, org_buf, block_size - delete_len, enc_buf, &length);
+
+	    ssize_t bytes_write = ::write(dm_operations_data.file.fd, enc_buf, block_size - delete_len);
+	    if (bytes_write == -1)
+		PX4_ERR("Dataman(org) write error!\n");
+
+	    i += block_size;
+	}
+	free(org_buf);
+	free(enc_buf);
+
 	close(dm_operations_data.file.fd);
 	dm_operations_data.running = false;
 }
@@ -682,6 +754,7 @@ task_main(int argc, char *argv[])
 	switch (backend) {
 	case BACKEND_FILE:
 		PX4_INFO("data manager file '%s' size is %u bytes", k_data_manager_device_path, max_offset);
+		size = max_offset;
 
 		break;
 

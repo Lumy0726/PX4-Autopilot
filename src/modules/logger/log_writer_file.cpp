@@ -34,6 +34,9 @@
 #include "log_writer_file.h"
 #include "messages.h"
 
+#include <modules/mesl_crypto/mc.h>
+#include <modules/mesl_crypto/SHA.h>
+
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
@@ -48,6 +51,8 @@
 
 using namespace time_literals;
 
+char file_name[32];
+char lg_file_name[64];
 
 namespace px4
 {
@@ -651,6 +656,8 @@ size_t LogWriterFile::LogFileBuffer::get_read_ptr(void **ptr, bool *is_part)
 
 bool LogWriterFile::LogFileBuffer::start_log(const char *filename)
 {
+	strcpy(file_name, filename);
+
 	_fd = ::open(filename, O_CREAT | O_WRONLY, PX4_O_MODE_666);
 	_had_write_error.store(false);
 
@@ -704,6 +711,66 @@ void LogWriterFile::LogFileBuffer::close_file()
 {
 	if (_fd >= 0) {
 		int res = close(_fd);
+
+		int i;
+		for (i = 0; i < 43; i++) {
+		    if (i < 27) {
+			lg_file_name[i] = file_name[i];
+		    }
+		    else if (i == 27) {
+			lg_file_name[i] = 'e';
+		    }
+		    else if (i == 28) {
+			lg_file_name[i] = 'n';
+		    }
+		    else if (i == 29) {
+			lg_file_name[i] = 'c';
+		    }
+		    else if (i == 30) {
+			lg_file_name[i] = '_';
+		    }
+		    else {
+			lg_file_name[i] = file_name[i - 4];
+		    }
+		}
+		int org_file = open(file_name, O_RDONLY);
+		int enc_file = open(lg_file_name, O_CREAT | O_WRONLY, PX4_O_MODE_666);
+
+		int block_size = 64;
+		byte* org_buf = (byte*)malloc(block_size);
+		byte* enc_buf = (byte*)malloc(block_size);
+
+		i = 0;
+		int add_len = 0, delete_len = 0, length;
+		while (i < (int)_total_written) {
+		    if (i > (int)_total_written - block_size) {
+			delete_len = block_size - _total_written % block_size;
+			block_size -= delete_len;
+			add_len = delete_len % 16;
+		    }
+
+		    ssize_t log_read = ::read(org_file, org_buf, block_size);
+		    if (log_read == -1) {
+			PX4_ERR("Log read error!\n");
+			break;
+		    }
+
+		    Encrypt_AES128(16, org_buf, block_size, enc_buf, &length);
+
+		    ssize_t log_write = ::write(enc_file, enc_buf, block_size + add_len);
+		    if (log_write == -1) {
+			PX4_ERR("Log write error!\n");
+			break;
+		    }
+
+		    i += block_size;
+		}
+		printf("%d\n", add_len);
+
+		free(org_buf);
+		free(enc_buf);
+		close(org_file);
+		close(enc_file);
 
 		if (res) {
 			PX4_WARN("closing log file failed (%i)", errno);
