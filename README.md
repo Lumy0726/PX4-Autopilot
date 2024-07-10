@@ -23,7 +23,7 @@ PX4 is highly portable, OS-independent and supports Linux, NuttX and MacOS out o
 
 # Secure PX4 Autopilot
 
-AES, SHA256, RSA1024 등 암호화 모듈이 적용된 PX4 package
+AES, SHA256, RSA1024 등 암호화 모듈이 적용된 PX4 package.
 
 * 모듈 경로 :  
 `/module/mesl_crypto`
