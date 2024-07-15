@@ -39,7 +39,9 @@ void RSA::encrypt(uint8_t* plainText, int plainLen, uint8_t* cipherText, int* ci
     }
     printf("\n===========END CIPHERTEXT===========\n");
 #endif
+    ctr += 4;
     * cipherLen = ctr;
+    
 }
 
 void RSA::decrypt(uint8_t* plainText, int* plainLen, uint8_t* cipherText, int cipherLen, int* privateKey)
@@ -52,7 +54,7 @@ void RSA::decrypt(uint8_t* plainText, int* plainLen, uint8_t* cipherText, int ci
 
     //re-assemble char array to array of int
     unsigned int i = 0;
-    for (i = 0; i <= cipherLen / sizeof(int); i++) {
+    for (i = 0; i < cipherLen / sizeof(int); i++) {
         ctr = i * sizeof(int);
         temp = (((unsigned char)cipherText[ctr + 1] << 8) | (unsigned char)cipherText[ctr]);
 
