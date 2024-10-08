@@ -148,7 +148,15 @@ bool SerialImpl::configure()
 	uart_config.c_lflag &= ~(ECHO | ECHONL | ICANON | IEXTEN | ISIG);
 
 	/* no parity, one stop bit, disable flow control */
-	uart_config.c_cflag &= ~(CSTOPB | PARENB | CRTSCTS);
+	// uart_config.c_cflag &= ~(CSTOPB | PARENB | CRTSCTS); // PX4 기본 코드. 나중에 활성화 할 것.
+
+	uart_config.c_cflag &= ~CSIZE;  // 데이터 비트 크기 초기화
+	uart_config.c_cflag |= CS8;     // 8비트 데이터
+
+	// 짝수 패리티 설정
+	uart_config.c_cflag |= PARENB;  // 패리티 활성화 (짝수 패리티가 기본)
+	uart_config.c_cflag &= ~PARODD; // 홀수 패리티 비활성화 (짝수 패리티 사용)
+
 
 	/* set baud rate */
 	if ((termios_state = cfsetispeed(&uart_config, speed)) < 0) {
@@ -312,7 +320,7 @@ ssize_t SerialImpl::write(const void *buffer, size_t buffer_size)
 	::fsync(_serial_fd);
 
 	if (written < 0) {
-		PX4_ERR("%s write error %d", _port, written);
+		PX4_INFO("%s write error %d", _port, written);
 	}
 
 	return written;
@@ -390,6 +398,18 @@ Parity SerialImpl::getParity() const
 
 bool SerialImpl::setParity(Parity parity)
 {
+	/*
+	_parity = parity;
+	if (_parity == Parity::Even){
+		uart_config.c_cflag &= ~CSIZE;  // 데이터 비트 크기 초기화
+		uart_config.c_cflag |= CS8;     // 8비트 데이터
+
+		// 짝수 패리티 설정
+		uart_config.c_cflag |= PARENB;  // 패리티 활성화 (짝수 패리티가 기본)
+		uart_config.c_cflag &= ~PARODD; // 홀수 패리티 비활성화 (짝수 패리티 사용)
+	}
+	*/
+
 	return parity == Parity::None;
 }
 
@@ -400,6 +420,11 @@ StopBits SerialImpl::getStopbits() const
 
 bool SerialImpl::setStopbits(StopBits stopbits)
 {
+	/*
+	_stopbits = stopbits;
+	if(_stopbits == StopBits::Two)
+		uart_config.c_cflag |= CSTOPB;  // 2 스탑 비트 사용
+	*/
 	return stopbits == StopBits::One;
 }
 

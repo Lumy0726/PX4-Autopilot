@@ -40,6 +40,7 @@ px4_add_romfs_files(
 	rcS
 	rc.sensors
 	rc.vehicle_setup
+	rc.se
 
 	# TODO
 	rc.balloon_apps

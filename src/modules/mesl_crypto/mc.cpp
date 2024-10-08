@@ -40,18 +40,19 @@
 
 #include "mc.h"
 
-
 #define PRIVATE 0
 #define PUBLIC 1
 
-#define MAX_AES_KEY_IDX 32
+#define MAX_AES_KEY_IDX 1
 #define MAX_AES_KEY_SIZE 16
 
 int publicKey[2] = { 14351, 11 };
 int privateKey[2] = { 14351, 1283 };
 
-byte AES_key[MAX_AES_KEY_IDX][16] = { 0x7C, 0x85, 0x20, 0x89, 0xFF, 0xDB, 0x16, 0x12, 0x6D, 0xBE, 0xE7, 0xC9, 0x68, 0xA7, 0x51, 0xB5 };
+extern uint8_t _AES_key[16];
+extern int key_flag;
 
+byte AES_key[MAX_AES_KEY_IDX][16] = {};
 
 void dump(byte* buf, int len) {
 	int i;
@@ -62,16 +63,13 @@ void dump(byte* buf, int len) {
 	printf("\n");
 }
 
-int Init_SE() {
-	return 1;
-}
+int Init_MC() {
 
-int Generate_AES128Key(int keyNum) {
-    /*
-	for (int i = 0; i < MAX_AES_KEY_SIZE; i++) {
-		AES_key[keyNum][i] = rand() % 255;
-	}
-	*/
+	while(key_flag != 1);
+
+	for(int i = 0; i < 16; i++)
+		AES_key[0][i] = _AES_key[i];
+
 	return 1;
 }
 

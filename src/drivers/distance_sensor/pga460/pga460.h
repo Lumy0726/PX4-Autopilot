@@ -54,7 +54,7 @@
 #include <px4_platform_common/tasks.h>
 
 
-#define PGA460_DEFAULT_PORT "/dev/ttyS6"
+#define PGA460_DEFAULT_PORT "/dev/ttyS1"
 #define MAX_DETECTABLE_DISTANCE          3.0f
 #define MIN_DETECTABLE_DISTANCE          0.05f
 #define MAX_DETECTABLE_TEMPERATURE     100.0f

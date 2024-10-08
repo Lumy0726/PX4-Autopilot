@@ -59,7 +59,7 @@
 #include "../comms.h"
 #include "../messages.h"
 
-#define DEFAULT_UART "/dev/ttyS6";		/**< Serial4 */
+#define DEFAULT_UART "/dev/ttyS1";		/**< Serial4 */
 
 static int thread_should_exit = false;		/**< Deamon exit flag */
 static int thread_running = false;		/**< Deamon status flag */

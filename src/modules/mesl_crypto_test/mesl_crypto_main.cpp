@@ -45,8 +45,6 @@ extern "C" __EXPORT int mesl_crypto_main(int argc, char *argv[]) {
 	uint8_t AES_dec_data[64];
 	int AES_dec_len;
 
-	if (!Generate_AES128Key(AES_key_num))
-		printf("Set AES128 Key Generation Failure\n");
 
 	if (Encrypt_AES128(AES_key_num, plain_data, plain_len, AES_enc_data, &AES_enc_len)) {
 		printf("AES enc_data : ");

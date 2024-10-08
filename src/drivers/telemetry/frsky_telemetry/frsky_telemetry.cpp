@@ -1,3 +1,4 @@
+
 /****************************************************************************
  *
  *   Copyright (c) 2013-2014 PX4 Development Team. All rights reserved.
@@ -217,7 +218,7 @@ static void set_uart_invert(int uart, bool invert)
  */
 static int frsky_telemetry_thread_main(int argc, char *argv[])
 {
-	device_name = "/dev/ttyS6"; /* default USART8 */
+	device_name = "/dev/ttyS1"; /* default USART8 */
 	unsigned scanning_timeout_ms = 0;
 	frsky_state = SCANNING;
 	frsky_state_t baudRate = DTYPE;
