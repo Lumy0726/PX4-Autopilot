@@ -12,9 +12,8 @@ typedef uint8_t byte;
 
 void dump(byte* buf, int len);
 
-int Init_SE();
+int Init_MC();
 
-int Generate_AES128Key(int keyNum);
 int Encrypt_AES128(int keyNum, uint8_t* plain_data, int plain_len, uint8_t* enc_data, int* enc_len);
 int Decrypt_AES128(int keyNum, uint8_t* enc_data, int enc_len, uint8_t* dec_data, int* dec_len);
 
