@@ -603,6 +603,75 @@ void AES::do_aes_decrypt(byte *cipher,int size_c,byte *plain,byte *key, int bits
 
 /******************************************************************************/
 
+void AES::xor_buf(byte *in, byte *out, int len, int p) {
+  for(int i = 0; i < len; i++) {
+    out[i] ^=in[p];
+    p++;
+  }
+}
+
+void AES::increment_iv(byte *iv_buf, int counter_size) {
+  for(int i = N_BLOCK - 1; i >= N_BLOCK - counter_size; i--) {
+    iv_buf[i]++;
+    if(iv_buf[i] != 0 || i == N_BLOCK - counter_size)
+      break;
+  }
+}
+
+void AES::ctr_initialize() {
+  memset(ctr_iv, 0, 16);
+  last_block_len = 0;
+}
+
+extern int last_block_len;
+byte AES::ctr_encrypt(byte *plain, int plain_len, byte *cipher, byte *key, int bits) {
+  int i = 0, len, processed_len = 0;
+  byte iv_buf[N_BLOCK], out_buf[N_BLOCK];
+  memcpy(iv_buf, ctr_iv, N_BLOCK);
+
+  if(N_BLOCK - last_block_len > 0 && last_block_len != 0) {
+    if(encrypt(iv_buf, out_buf) != SUCCESS)
+      return FAILURE;
+    xor_buf(out_buf, &cipher[i], N_BLOCK - last_block_len, last_block_len);
+    increment_iv(iv_buf, N_BLOCK);
+    plain_len = plain_len - N_BLOCK + last_block_len;
+    processed_len = N_BLOCK - last_block_len;
+  }
+
+  set_key(key, bits);
+  len = plain_len - N_BLOCK;
+  if(plain_len >= N_BLOCK) {
+    for(i = 0; i <= len; i += N_BLOCK) {
+      if(encrypt(iv_buf, out_buf) != SUCCESS)
+        return FAILURE;
+      xor_buf(out_buf, &cipher[i + processed_len], N_BLOCK, 0);
+      increment_iv(iv_buf, N_BLOCK);
+    }
+  }
+
+  if(encrypt(iv_buf, out_buf) != SUCCESS)
+    return FAILURE;
+  xor_buf(out_buf, &cipher[i + processed_len], plain_len - i, 0);
+  last_block_len = plain_len - i;
+  memcpy(ctr_iv, iv_buf, N_BLOCK);
+  //printf("length: %d, %d\n", plain_len, last_block_len);
+
+  //for(i = 0; i < N_BLOCK; i++)
+  //  printf("%02x ", ctr_iv[i]);
+  //printf("\n\n");
+
+  return SUCCESS;
+}
+
+byte AES::ctr_decrypt(byte *cipher, int cipher_len, byte *plain, byte *key, int bits) {
+  if(ctr_encrypt(cipher, cipher_len, plain, key, bits) != SUCCESS)
+    return FAILURE;
+  else
+    return SUCCESS;
+}
+
+/******************************************************************************/
+
 #if defined(AES_LINUX)
 double AES::millis(){
 	gettimeofday(&tv, NULL);

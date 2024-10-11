@@ -130,6 +130,8 @@ static struct {
 /* Usage statistics */
 static unsigned g_func_counts[DM_NUMBER_OF_FUNCS];
 
+byte dm_buf[80];
+
 #define DM_SECTOR_HDR_SIZE 4	/* data manager per item header overhead */
 
 /* Table of the len of each item type including HDR size */
@@ -537,6 +539,7 @@ _file_clear(dm_item_t item)
 static int
 _file_initialize(unsigned max_offset)
 {
+	Init_MC();
 	const bool file_existed = (access(k_data_manager_device_path, F_OK) == 0);
 
 	/* Open or create the data manager file */
@@ -548,19 +551,17 @@ _file_initialize(unsigned max_offset)
 		return -1;
 	}
 
-	dm_operations_data.file.fd = open(k_data_manager_device_path, O_RDWR | O_CREAT | O_BINARY, PX4_O_MODE_666);
+	//dm_operations_data.file.fd = open(k_data_manager_device_path, O_RDWR | O_CREAT | O_BINARY, PX4_O_MODE_666);
 
-	lseek(dm_operations_data.file.fd, -7, SEEK_END);
+	lseek(dm_operations_data.file.fd, -3, SEEK_END);
 	byte ver_buf[3];
 	ssize_t ver_bytes_read = ::read(dm_operations_data.file.fd, ver_buf, 3);
 	if (ver_bytes_read == -1)
 	    PX4_ERR("Verify data read error!\n");
 	lseek(dm_operations_data.file.fd, 0, SEEK_SET);
 
-	if (!((ver_buf[0] == 0x61 && ver_buf[2] == 0x38) || (ver_buf[0] == 0x00 && ver_buf[2] == 0x00))) {
+	if (!(ver_buf[1] == 0x00 && ver_buf[2] == 0x00)) {
 	    int block_size = 64;
-	    byte* dec_buf = (byte*)malloc(block_size);
-	    byte* enc_buf = (byte*)malloc(block_size);
 
 	    int i = 0, delete_len = 0, length;
 	    while (i < (int)max_offset) {
@@ -568,22 +569,21 @@ _file_initialize(unsigned max_offset)
 		    delete_len = block_size - (int)max_offset % block_size;
 		}
 
-		ssize_t enc_bytes_read = ::read(dm_operations_data.file.fd, enc_buf, block_size - delete_len);
+		ssize_t enc_bytes_read = ::read(dm_operations_data.file.fd, dm_buf, block_size - delete_len);
 		if (enc_bytes_read == -1)
 		    PX4_ERR("Dataman(enc) read error!\n");
 
 		lseek(dm_operations_data.file.fd, i, SEEK_SET);
-		Decrypt_AES128(16, enc_buf, block_size - delete_len, dec_buf, &length);
+		Decrypt_AES128(0, dm_buf, block_size - delete_len, dm_buf, &length);
 
-		ssize_t dec_bytes_write = ::write(dm_operations_data.file.fd, dec_buf, block_size - delete_len);
+		ssize_t dec_bytes_write = ::write(dm_operations_data.file.fd, dm_buf, block_size - delete_len);
 		if (dec_bytes_write == -1)
 		    PX4_ERR("Dataman(enc) write error!\n");
 
 		i += block_size;
 	    }
 	    lseek(dm_operations_data.file.fd, 0, SEEK_SET);
-	    free(dec_buf);
-	    free(enc_buf);
+		fsync(dm_operations_data.file.fd);
 	}
 
 	if ((unsigned)lseek(dm_operations_data.file.fd, max_offset, SEEK_SET) != max_offset) {
@@ -663,9 +663,6 @@ _file_shutdown()
 	lseek(dm_operations_data.file.fd, 0, SEEK_SET);
 
 	int block_size = 64;
-	byte* org_buf = (byte*)malloc(block_size);
-	byte* enc_buf = (byte*)malloc(block_size);
-
 	int length;
 	int i = 0, delete_len = 0;
 	while (i < (int)size) {
@@ -673,21 +670,20 @@ _file_shutdown()
 		delete_len = block_size - (int)size % block_size;
 	    }
 
-	    ssize_t bytes_read = ::read(dm_operations_data.file.fd, org_buf, block_size - delete_len);
+	    ssize_t bytes_read = ::read(dm_operations_data.file.fd, dm_buf, block_size - delete_len);
 	    if (bytes_read == -1)
 		PX4_ERR("Dataman(org) read error!\n");
 
 	    lseek(dm_operations_data.file.fd, i, SEEK_SET);
-	    Encrypt_AES128(16, org_buf, block_size - delete_len, enc_buf, &length);
+	    Encrypt_AES128(0, dm_buf, block_size - delete_len, dm_buf, &length);
 
-	    ssize_t bytes_write = ::write(dm_operations_data.file.fd, enc_buf, block_size - delete_len);
+	    ssize_t bytes_write = ::write(dm_operations_data.file.fd, dm_buf, block_size - delete_len);
 	    if (bytes_write == -1)
 		PX4_ERR("Dataman(org) write error!\n");
 
 	    i += block_size;
 	}
-	free(org_buf);
-	free(enc_buf);
+	fsync(dm_operations_data.file.fd);
 
 	close(dm_operations_data.file.fd);
 	dm_operations_data.running = false;
