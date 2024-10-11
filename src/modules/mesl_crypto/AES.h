@@ -257,6 +257,14 @@ class AES
 	 * @note The key will be stored in class variable.
 	 */
 	void do_aes_decrypt(byte *cipher,int size_c,byte *plain,byte *key, int bits);
+	
+	byte log_encrypt(byte *plain, int plain_len, byte *cipher, byte *last_block, int last_block_len, byte *key, byte *vector, int bits);
+	
+	void xor_buf(byte *in, byte *out, int len, int p);
+	void increment_iv(byte *iv_buf, int counter_size);
+	void ctr_initialize();
+	byte ctr_encrypt(byte *plain, int plain_len, byte *cipher, byte *key, int bits);
+	byte ctr_decrypt(byte *cipher, int cipher_len, byte *plain, byte *key, int bits);
 
 	#if defined(AES_LINUX)
 		/**
@@ -271,8 +279,10 @@ class AES
   byte key_sched [KEY_SCHEDULE_BYTES] ;/**< holds the pre-computed key for the encryption/decrpytion. */
   unsigned long long int IVC;/**< holds the initialization vector counter in numerical format. */
   byte iv[16];/**< holds the initialization vector that will be used in the cipher. */
+  byte ctr_iv[16] = {0};
   int pad;/**< holds the size of the padding. */
-  int size;/**< hold the size of the plaintext to be ciphered */
+  int size;/**< holds the size of the plaintext to be ciphered. */
+  int last_block_len = 0;
   #if defined(AES_LINUX)
 	timeval tv;/**< holds the time value on linux */
 	byte arr_pad[16];/**< holds the hexadecimal padding values on linux */
