@@ -539,7 +539,7 @@ _file_clear(dm_item_t item)
 static int
 _file_initialize(unsigned max_offset)
 {
-	Init_MC();
+	Is_Initialized_MC();
 	const bool file_existed = (access(k_data_manager_device_path, F_OK) == 0);
 
 	/* Open or create the data manager file */
