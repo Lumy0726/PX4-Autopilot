@@ -98,6 +98,220 @@ hrt_abstime Mavlink::_first_start_time = {0};
 
 bool Mavlink::_boot_complete = false;
 
+
+
+// -------------------------------------------------------
+// Implement, for MESL_CRYPTO related things.
+// -------------------------------------------------------
+
+#ifdef MAVLINK_USE_CXX_NAMESPACE
+namespace mavlink {
+#endif
+
+#ifdef MESL_MAVLINK_DEBUG
+
+// @brief  Getting 'Mavlink' instance using 'mavlink_status_t'.
+// @return '*Mavlink' for success, NULL otherwise.
+static inline Mavlink* mesl_mavlink_debug_status2mavlink(
+		const mavlink_status_t* status
+		)
+{
+	for (int i = 0; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
+		if (
+				mavlink_module_instances[i]->get_status() ==
+				status
+			 ) {
+			return mavlink_module_instances[i];
+		}
+	}
+	return nullptr;
+}
+
+#endif // #ifdef MESL_MAVLINK_DEBUG
+
+#ifdef MESL_CRYPTO
+
+#ifdef MESL_MAVLINK_DEBUG
+
+// @brief  Print debug information,
+//           when 'mavlink_mesl_crypto_condition' called.
+//         This function is for non-static non-inline function.
+void mavlink_mesl_crypto_condition_debuginfo(
+		const mavlink_status_t* status,
+		uint32_t msgid,
+		uint8_t system_id,
+		uint8_t component_id,
+		const char *payload,
+		uint8_t len
+		)
+{
+#ifdef MAVLINK_USE_MESSAGE_INFO
+	const mavlink_message_info_t *msginfo =
+		mavlink_get_message_info_by_id(msgid);
+#endif
+	const Mavlink *mavlink =
+		mesl_mavlink_debug_status2mavlink(status);
+	unsigned char pl4[4] = {0, };
+	memcpy(
+			(char*)pl4,
+			payload,
+			(len > (uint8_t)4) ? 4 : len);
+	// px4_usleep(500000);
+	if (! status) {
+		PX4_INFO("[MESL_CRYPTO_COND Error: (mavlink_status_t* == NULL)]:");
+		return;
+	}
+	if (! mavlink) {
+		PX4_INFO("[MESL_CRYPTO_COND Error: (Mavlink* == NULL)]:");
+		return;
+	}
+
+	// temp test code, only print HEARTBEAT msg.
+	if ((int)msgid) { return; }
+
+#ifdef MAVLINK_USE_MESSAGE_INFO
+	if (msginfo) {
+		PX4_INFO(
+				"[CRYPT_COND chan(%d/%d) msgname(%s)]:",
+				(int)(mavlink->get_channel()),
+				Mavlink::instance_count(),
+				msginfo->name
+				);
+	}
+	else {
+		PX4_INFO("[CRYPT_COND (CANNOT GET MESSAGE INFO)]:");
+	}
+#else
+	PX4_INFO(
+			"[CRYPT_COND chan(%d/%d) msgid(%d)]:",
+			(int)(mavlink->get_channel()),
+			Mavlink::instance_count(),
+			(int)(msgid)
+			);
+#endif
+	PX4_INFO("  :  msg(%d) seq(%d) sys(%d) comp(%d) len(%d) pl4(%02x%02x%02x%02x)",
+			(int)msgid,
+			(int)status->current_tx_seq,
+			(int)system_id,
+			(int)component_id,
+			(int)len,
+			pl4[0],
+			pl4[1],
+			pl4[2],
+			pl4[3]
+			);
+}
+#endif // #ifdef MESL_MAVLINK_DEBUG
+
+// @brief  Function to decide if MAVLink payload should be encrypted.
+//         Program that use MAVLink should implement this function.
+//         This function is for non-static non-inline function.
+// @param  'len': payload length (can be 0).
+// @return 'MESL_CRYPTO_METHOD_XXX' (true),
+//           if MAVLink payload should be encrypted.
+//         Zero otherwise.
+uint8_t mavlink_mesl_crypto_condition_f(
+		mavlink_status_t* status,
+		uint32_t msgid,
+		uint8_t system_id,
+		uint8_t component_id,
+		const char *payload,
+		uint8_t len
+		)
+{
+	if (status->mesl_crypto_condition) {
+		return status->mesl_crypto_method;
+	}
+	return 0;
+}
+
+// PX4_ERR("%s", str)
+void mavlink_mesl_printerror(const char *str) {
+	PX4_ERR("%s", str);
+}
+
+#endif // #ifdef MESL_CRYPTO
+
+#ifdef MESL_MAVLINK_DEBUG
+
+// @brief  Function for debug MAVLink frame parsing result.'
+//           This function is for non-static non-inline function.
+void mavlink_mesl_parse_result_f(
+		const mavlink_message_t* rxmsg,
+		const mavlink_status_t* status
+		)
+{
+	if (rxmsg == NULL) { return; }
+#ifdef MAVLINK_USE_MESSAGE_INFO
+	const mavlink_message_info_t *msginfo =
+		mavlink_get_message_info_by_id(rxmsg->msgid);
+#endif
+	const Mavlink *mavlink =
+		mesl_mavlink_debug_status2mavlink(status);
+	unsigned char pl4[4] = {0, };
+	memcpy(
+			(char*)pl4,
+			(const char*)(rxmsg->payload64),
+			(rxmsg->len > (uint8_t)4) ? 4 : rxmsg->len);
+	// px4_usleep(500000);
+	if (! status) {
+		PX4_INFO("[PARSE_RESULT Error: (mavlink_status_t* == NULL)]:");
+		return;
+	}
+	if (! mavlink) {
+		PX4_INFO("[PARSE_RESULT Error: (Mavlink* == NULL)]:");
+		return;
+	}
+
+	// temp test code, only print HEARTBEAT msg.
+	// if ((int)msgid) { return; }
+
+#ifdef MAVLINK_USE_MESSAGE_INFO
+	if (msginfo) {
+		PX4_INFO(
+				"[PARSE_RESULT chan(%d/%d) status_flag(%d) ret(%d) msgname(%s)]:",
+				(int)(mavlink->get_channel()),
+				Mavlink::instance_count(),
+				(int)(status->flags),
+				(int)(status->msg_received),
+				msginfo->name
+				);
+	}
+	else {
+		PX4_INFO("[CRYPT_COND (CANNOT GET MESSAGE INFO)]:");
+	}
+#else
+	PX4_INFO(
+			"[PARSE_RESULT chan(%d/%d) status_flag(%d) ret(%d) msgid(%d)]:",
+			(int)(mavlink->get_channel()),
+			Mavlink::instance_count(),
+			(int)(status->flags),
+			(int)(status->msg_received),
+			(int)(rxmsg->msgid)
+			);
+#endif
+	PX4_INFO("  :  msg(%d) seq(%d) iflag(0x%02x) sys(%d) comp(%d) len(%d) pl4(%02x%02x%02x%02x)",
+			(int)rxmsg->msgid,
+			(int)rxmsg->seq,
+			(unsigned int)rxmsg->incompat_flags,
+			(int)rxmsg->sysid,
+			(int)rxmsg->compid,
+			(int)rxmsg->len,
+			pl4[0],
+			pl4[1],
+			pl4[2],
+			pl4[3]
+			);
+}
+
+#endif // #ifdef MESL_MAVLINK_DEBUG
+
+#ifdef MAVLINK_USE_CXX_NAMESPACE
+} // namespace mavlink
+#endif
+
+
+
 Mavlink::Mavlink() :
 	ModuleParams(nullptr),
 	_receiver(this)
@@ -1842,11 +2056,21 @@ Mavlink::task_main(int argc, char *argv[])
 	bool err_flag = false;
 	int myoptind = 1;
 	const char *myoptarg = nullptr;
-#if defined(CONFIG_NET) || defined(__PX4_POSIX)
+#if defined(CONFIG_NET) || defined(__PX4_POSIX) || defined(MESL_CRYPTO)
 	int temp_int_arg;
 #endif
 
+
+
+#ifdef MESL_CRYPTO
+	while ((ch = px4_getopt(argc, argv, "b:r:d:n:u:o:m:t:c:E:fswxzZp", &myoptind, &myoptarg)) != EOF) {
+#endif // #ifdef MESL_CRYPTO
+#ifndef MESL_CRYPTO
 	while ((ch = px4_getopt(argc, argv, "b:r:d:n:u:o:m:t:c:fswxzZp", &myoptind, &myoptarg)) != EOF) {
+#endif // #ifndef MESL_CRYPTO
+
+
+
 		switch (ch) {
 		case 'b':
 			if (px4_get_parameter_value(myoptarg, _baudrate) != 0) {
@@ -2057,6 +2281,31 @@ Mavlink::task_main(int argc, char *argv[])
 		case 'Z':
 			_flow_control = FLOW_CONTROL_OFF;
 			break;
+
+
+
+#ifdef MESL_CRYPTO
+		// Set default option of MAVLink encryption method,
+		//   for this MAVLink channel (device or port).
+		case 'E':
+			PX4_INFO("asdfasdf111");
+			if (px4_get_parameter_value(myoptarg, temp_int_arg) != 0) {
+				PX4_ERR("invalid default option of MAVLink encryption method");
+				err_flag = true;
+			}
+			else if (temp_int_arg < 0 || 7 < temp_int_arg) {
+				PX4_ERR("invalid default option of MAVLink encryption method");
+				err_flag = true;
+			}
+			else if (temp_int_arg > 0) {
+				PX4_INFO("asdfasdf222, %d", temp_int_arg);
+				_mavlink_status.mesl_crypto_condition = (uint8_t)1;
+				_mavlink_status.mesl_crypto_method = (uint8_t)temp_int_arg;
+			}
+			break;
+#endif // #ifdef MESL_CRYPTO
+
+
 
 		default:
 			err_flag = true;
@@ -2846,6 +3095,15 @@ Mavlink::display_status()
 
 	printf("\tmavlink chan: #%u\n", static_cast<unsigned>(_channel));
 
+
+
+#ifdef MESL_CRYPTO
+	printf("\tmesl_crypto_method: %d\n", (int)(_mavlink_status.mesl_crypto_method));
+	printf("\tmesl_crypto_method_rx: %d\n", (int)(_mavlink_status.mesl_crypto_method_rx));
+#endif // #ifdef MESL_CRYPTO
+
+
+
 	if (_tstatus.timestamp > 0) {
 
 		printf("\ttype:\t\t");
@@ -3278,6 +3536,14 @@ $ mavlink stream -u 14556 -s HIGHRES_IMU -r 50
 	PRINT_MODULE_USAGE_PARAM_FLAG('x', "Enable FTP", true);
 	PRINT_MODULE_USAGE_PARAM_FLAG('z', "Force hardware flow control always on", true);
 	PRINT_MODULE_USAGE_PARAM_FLAG('Z', "Force hardware flow control always off", true);
+
+
+
+#ifdef MESL_CRYPTO
+	PRINT_MODULE_USAGE_PARAM_INT('E', -1, 0, 7, "Set default option of MAVLink encryption method (zero to default-disable)", true);
+#endif // #ifdef MESL_CRYPTO
+
+
 
 	PRINT_MODULE_USAGE_COMMAND_DESCR("stop-all", "Stop all instances");
 

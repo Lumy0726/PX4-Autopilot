@@ -66,3 +66,21 @@ PARAM_DEFINE_INT32(SYS_USB_AUTO, 2);
  * @group CDCACM
  */
 PARAM_DEFINE_INT32(USB_MAV_MODE, 2);
+
+/**
+ * MESL_CRYPTO_METHOD value for usb autoconnection
+ *
+ * @value 0 Disabled
+ * @value 1 method 1
+ * @value 2 method 2
+ * @value 3 method 3
+ * @value 4 method 4
+ * @value 5 method 5
+ * @value 6 method 6
+ * @value 7 method 7
+ *
+ * @reboot_required false
+ *
+ * @group CDCACM
+ */
+PARAM_DEFINE_INT32(USB_MESLC_AUTO, 0);

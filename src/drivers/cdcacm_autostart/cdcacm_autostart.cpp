@@ -39,6 +39,8 @@ __BEGIN_DECLS
 #include <arch/board/board.h>
 #include <builtin/builtin.h>
 
+#include <modules/mavlink/mesl_crypto_macros.h>
+
 extern int sercon_main(int c, char **argv);
 extern int serdis_main(int c, char **argv);
 __END_DECLS
@@ -494,8 +496,23 @@ bool CdcAcmAutostart::start_mavlink()
 {
 	bool success = false;
 	char mavlink_mode_string[3];
+#ifdef MESL_CRYPTO
+	char mesl_crypto_method[3];
+#endif // #ifdef MESL_CRYPTO
 	snprintf(mavlink_mode_string, sizeof(mavlink_mode_string), "%ld", _usb_mav_mode.get());
+#ifdef MESL_CRYPTO
+	snprintf(mesl_crypto_method, sizeof(mesl_crypto_method), "%ld", _usb_meslc_auto.get());
+	static const char *argv[] {
+		"mavlink", "start",
+		"-d", USB_DEVICE_PATH,
+		"-m", mavlink_mode_string,
+		"-E", mesl_crypto_method,
+		nullptr
+		};
+#endif // #ifdef MESL_CRYPTO
+#ifndef MESL_CRYPTO
 	static const char *argv[] {"mavlink", "start", "-d", USB_DEVICE_PATH, "-m", mavlink_mode_string, nullptr};
+#endif // #ifndef MESL_CRYPTO
 
 	if (execute_process((char **)argv) > 0) {
 		success = true;

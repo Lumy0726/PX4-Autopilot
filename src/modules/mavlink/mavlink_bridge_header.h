@@ -61,6 +61,21 @@
 # define MAVLINK_COMM_5 static_cast<mavlink_channel_t>(5)
 #endif
 
+
+
+#include "mesl_crypto_macros.h"
+
+// -------------------------------------------------------
+// Setting dependencies.
+// -------------------------------------------------------
+
+#ifdef MAVLINK_USE_MESSAGE_INFO
+// require 'offsetof'
+#include <stddef.h> 
+#endif
+
+
+
 #include <mavlink_types.h>
 #include <unistd.h>
 
@@ -96,6 +111,191 @@ extern mavlink_message_t *mavlink_get_channel_buffer(uint8_t chan);
 #if !MAVLINK_FTP_UNIT_TEST
 #include <uAvionix.h>
 #endif
+
+
+
+// -------------------------------------------------------
+// Declare or implement, for MESL_CRYPTO related things.
+//   NOTE: 'MAVLINK_HELPER' is 'static inline' by default.
+// -------------------------------------------------------
+
+#ifdef MAVLINK_USE_CXX_NAMESPACE
+namespace mavlink {
+#endif
+
+#ifdef MESL_CRYPTO
+
+#ifdef MESL_MAVLINK_DEBUG
+
+// @brief  Print debug information,
+//           when 'mavlink_mesl_crypto_condition' called.
+//         This function is for non-static non-inline function.
+void mavlink_mesl_crypto_condition_debuginfo(
+		const mavlink_status_t* status,
+		uint32_t msgid,
+		uint8_t system_id,
+		uint8_t component_id,
+		const char *payload,
+		uint8_t len
+		);
+#endif // #ifdef MESL_MAVLINK_DEBUG
+
+// @brief  Function to decide if MAVLink payload should be encrypted.
+//         Program that use MAVLink should implement this function.
+//         This function is for non-static non-inline function.
+// @param  'len': payload length (can be 0).
+// @return 'MESL_CRYPTO_METHOD_XXX' (true),
+//           if MAVLink payload should be encrypted.
+//         Zero otherwise.
+uint8_t mavlink_mesl_crypto_condition_f(
+		mavlink_status_t* status,
+		uint32_t msgid,
+		uint8_t system_id,
+		uint8_t component_id,
+		const char *payload,
+		uint8_t len
+		);
+
+// @brief  Function to decide if MAVLink payload should be encrypted.
+//         Program that use MAVLink should implement this function.
+// @param  'len': payload length (can be 0).
+// @return 'MESL_CRYPTO_METHOD_XXX' (true),
+//           if MAVLink payload should be encrypted.
+//         Zero otherwise.
+MAVLINK_HELPER uint8_t mavlink_mesl_crypto_condition(
+		mavlink_status_t* status,
+		uint32_t msgid,
+		uint8_t system_id,
+		uint8_t component_id,
+		const char *payload,
+		uint8_t len
+		)
+{
+#ifdef MESL_MAVLINK_DEBUG
+	mavlink_mesl_crypto_condition_debuginfo(
+			status,
+			msgid,
+			system_id,
+			component_id,
+			payload,
+			len);
+#endif // #ifdef MESL_MAVLINK_DEBUG
+	return mavlink_mesl_crypto_condition_f(
+			status,
+			msgid,
+			system_id,
+			component_id,
+			payload,
+			len);
+}
+
+// PX4_ERR("%s", str)
+void mavlink_mesl_printerror(const char *str);
+
+// @brief  Function to encrypt MAVLink payload.
+//         Program that use MAVLink should implement this function.
+// @param  'crypto_method': method for encryption,
+//           value should be 'MESL_CRYPTO_METHOD_XXX'.
+// @param  'len': payload length (can be 0).
+// @return Payload length after encryption.
+// @note   "input_len == 0 && output_len == 0",
+//           will be considered as non-encryption.
+//         But, "input len != 0 && output_len == 0",
+//           or "output_len < 0 || output_len > maxlen",
+//           will be considered as error,
+//           MAVLink frame will be sent with zero payload length,
+//           and receiving side can report error,
+//           because the length is zero but encryption iflag is set.
+MAVLINK_HELPER int32_t mavlink_mesl_encrypt(
+		uint8_t crypto_method,
+		const char *src,
+		char *dst,
+		uint8_t len,
+		uint8_t maxlen
+		)
+{
+	if (crypto_method != MESL_CRYPTO_METHOD_USER7) {
+		mavlink_mesl_printerror("MESL_CRYPTO: invalid crypto method requested");
+		// PX4_ERR("MESL_CRYPTO: invalid crypto method requested");
+		return (int32_t)0;
+	}
+
+	// User defined encryption:
+	//   XOR with key '0xab', for test.
+	memcpy(
+			dst,
+			src,
+			len);
+	for (uint8_t i = (uint8_t)0; i < len; i++) {
+		dst[i] ^= 0xab;
+	}
+	return (int32_t)len;
+}
+
+// @brief  Function to decrypt MAVLink payload.
+//         Program that use MAVLink should implement this function.
+// @param  'crypto_method': method for decryption,
+//           value can be 'MESL_CRYPTO_METHOD_XXX'.
+//         For invalid 'crypto_method',
+//           this function should return '-1'.
+// @param  'len': payload length.
+//         If 'len' is zero,
+//           this function should return '-1'.
+// @return Payload length after decryption (zero is valid result).
+//         If "output_len < 0 || output_len > maxlen",
+//           will be considered as error,
+//           one example is for invalue 'crypto_method'.
+MAVLINK_HELPER int32_t mavlink_mesl_decrypt(
+		uint8_t crypto_method,
+		const char *src,
+		char *dst,
+		uint8_t len,
+		uint8_t maxlen
+		)
+{
+	if (crypto_method != MESL_CRYPTO_METHOD_USER7) {
+		return (int32_t)-1;
+	}
+
+	// User defined encryption:
+	//   XOR with key '0xab', for test.
+	memcpy(
+			dst,
+			src,
+			len);
+	for (uint8_t i = (uint8_t)0; i < len; i++) {
+		dst[i] ^= 0xab;
+	}
+	return (int32_t)len;
+}
+
+#endif // #ifdef MESL_CRYPTO
+
+#ifdef MESL_MAVLINK_DEBUG
+
+// @brief  Function for debug MAVLink frame parsing result.'
+//           This function is for non-static non-inline function.
+void mavlink_mesl_parse_result_f(
+		const mavlink_message_t* rxmsg,
+		const mavlink_status_t* status
+		);
+
+// @brief  Function for debug MAVLink frame parsing result.'
+MAVLINK_HELPER void mavlink_mesl_parse_result(
+		const mavlink_message_t* rxmsg,
+		const mavlink_status_t* status
+		)
+{
+	mavlink_mesl_parse_result_f(rxmsg, status);
+}
+
+#endif // #ifdef MESL_MAVLINK_DEBUG
+
+#ifdef MAVLINK_USE_CXX_NAMESPACE
+} // namespace mavlink
+#endif
+
+
 
 __END_DECLS
 
