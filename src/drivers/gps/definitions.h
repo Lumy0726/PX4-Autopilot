@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2024 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2016 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,57 +31,36 @@
  *
  ****************************************************************************/
 
-#include "SCH16T.hpp"
+/**
+ * @file definitions.h
+ * common platform-specific definitions & abstractions for gps
+ * @author Beat Küng <beat-kueng@gmx.net>
+ */
 
-#include <px4_platform_common/module.h>
+#pragma once
 
-void SCH16T::print_usage()
-{
-	PRINT_MODULE_USAGE_NAME("sch16t", "driver");
-	PRINT_MODULE_USAGE_SUBCATEGORY("imu");
-	PRINT_MODULE_USAGE_COMMAND("start");
-	PRINT_MODULE_USAGE_PARAMS_I2C_SPI_DRIVER(false, true);
-	PRINT_MODULE_USAGE_PARAM_INT('R', 0, 0, 35, "Rotation", true);
-	PRINT_MODULE_USAGE_DEFAULT_COMMANDS();
-}
+#include <drivers/drv_hrt.h>
+#include <px4_platform_common/defines.h>
+#include <px4_platform_common/log.h>
+#include <uORB/topics/satellite_info.h>
+#include <uORB/topics/sensor_gps.h>
+#include <uORB/topics/sensor_gnss_relative.h>
 
-extern "C" int sch16t_main(int argc, char *argv[])
-{
-	int ch;
-	using ThisDriver = SCH16T;
-	BusCLIArguments cli{false, true};
-	cli.default_spi_frequency = 5000000;
-	cli.spi_mode = SPIDEV_MODE0;
+#define GPS_INFO(...) PX4_INFO(__VA_ARGS__)
+#define GPS_WARN(...) PX4_WARN(__VA_ARGS__)
+#define GPS_ERR(...) PX4_ERR(__VA_ARGS__)
 
-	while ((ch = cli.getOpt(argc, argv, "R:")) != EOF) {
-		switch (ch) {
-		case 'R':
-			cli.rotation = (enum Rotation)atoi(cli.optArg());
-			break;
-		}
-	}
+#define gps_usleep px4_usleep
 
-	const char *verb = cli.optArg();
+/**
+ * Get the current time in us. Function signature:
+ * uint64_t hrt_absolute_time()
+ */
+#define gps_absolute_time hrt_absolute_time
+typedef hrt_abstime gps_abstime;
 
-	if (!verb) {
-		ThisDriver::print_usage();
-		return -1;
-	}
 
-	BusInstanceIterator iterator(MODULE_NAME, cli, DRV_IMU_DEVTYPE_SCH16T);
-
-	if (!strcmp(verb, "start")) {
-		return ThisDriver::module_start(cli, iterator);
-	}
-
-	if (!strcmp(verb, "stop")) {
-		return ThisDriver::module_stop(iterator);
-	}
-
-	if (!strcmp(verb, "status")) {
-		return ThisDriver::module_status(iterator);
-	}
-
-	ThisDriver::print_usage();
-	return -1;
-}
+// TODO: this functionality is not available on the Snapdragon yet
+#ifdef __PX4_QURT
+#define NO_MKTIME
+#endif

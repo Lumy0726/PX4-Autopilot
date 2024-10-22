@@ -60,8 +60,6 @@
 #include <parameters/param.h>
 #include "systemlib/err.h"
 
-#include <modules/mesl_crypto/mc.h>
-
 __BEGIN_DECLS
 __EXPORT int param_main(int argc, char *argv[]);
 __END_DECLS
