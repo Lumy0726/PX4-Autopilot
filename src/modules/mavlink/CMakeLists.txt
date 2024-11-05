@@ -127,6 +127,8 @@ px4_add_module(
 		tune_publisher.cpp
 	MODULE_CONFIG
 		module.yaml
+	INCLUDES
+		${CMAKE_CURRENT_SOURCE_DIR}/../mesl_crypto
 	DEPENDS
 		adsb
 		airspeed

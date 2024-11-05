@@ -189,6 +189,42 @@ MAVLINK_HELPER uint8_t mavlink_mesl_crypto_condition(
 			len);
 }
 
+// @brief  Function to encrypt MAVLink payload,
+//           with method 'MESL_CRYPTO_METHOD_AES128'.
+// @param  'len': payload length (can be 0).
+// @return Payload length after encryption.
+// @note   "input_len == 0 && output_len == 0",
+//           will be considered as non-encryption.
+//         But, "input len != 0 && output_len == 0",
+//           or "output_len < 0 || output_len > maxlen",
+//           will be considered as error,
+//           MAVLink frame will be sent with zero payload length,
+//           and receiving side can report error,
+//           because the length is zero but encryption iflag is set.
+int32_t mavlink_mesl_encrypt_aes128(
+		const char *src,
+		char *dst,
+		uint8_t len,
+		uint8_t maxlen
+		);
+
+// @brief  Function to decrypt MAVLink payload,
+//           with method 'MESL_CRYPTO_METHOD_AES128'.
+// @param  'len': payload length.
+//         If 'len' is zero,
+//           this function should return '-1'.
+// @return Payload length after decryption (zero is valid result).
+//         If "output_len < 0 || output_len > maxlen",
+//           will be considered as error,
+//           one example is for invalue 'crypto_method'.
+int32_t mavlink_mesl_decrypt_aes128(
+		const char *src,
+		char *dst,
+		uint8_t len,
+		uint8_t maxlen
+		);
+
+
 // PX4_ERR("%s", str)
 void mavlink_mesl_printerror(const char *str);
 
@@ -214,22 +250,25 @@ MAVLINK_HELPER int32_t mavlink_mesl_encrypt(
 		uint8_t maxlen
 		)
 {
-	if (crypto_method != MESL_CRYPTO_METHOD_USER7) {
-		mavlink_mesl_printerror("MESL_CRYPTO: invalid crypto method requested");
-		// PX4_ERR("MESL_CRYPTO: invalid crypto method requested");
-		return (int32_t)0;
+	if (crypto_method == MESL_CRYPTO_METHOD_AES128) {
+		return mavlink_mesl_encrypt_aes128(src, dst, len, maxlen);
+	}
+	if (crypto_method == MESL_CRYPTO_METHOD_USER7) {
+		// User defined encryption:
+		//   XOR with key '0xab', for test.
+		memcpy(
+				dst,
+				src,
+				len);
+		for (uint8_t i = (uint8_t)0; i < len; i++) {
+			dst[i] ^= 0xab;
+		}
+		return (int32_t)len;
 	}
 
-	// User defined encryption:
-	//   XOR with key '0xab', for test.
-	memcpy(
-			dst,
-			src,
-			len);
-	for (uint8_t i = (uint8_t)0; i < len; i++) {
-		dst[i] ^= 0xab;
-	}
-	return (int32_t)len;
+	mavlink_mesl_printerror("MESL_CRYPTO: invalid crypto method requested");
+	// PX4_ERR("MESL_CRYPTO: invalid crypto method requested");
+	return (int32_t)0;
 }
 
 // @brief  Function to decrypt MAVLink payload.
@@ -253,20 +292,23 @@ MAVLINK_HELPER int32_t mavlink_mesl_decrypt(
 		uint8_t maxlen
 		)
 {
-	if (crypto_method != MESL_CRYPTO_METHOD_USER7) {
-		return (int32_t)-1;
+	if (crypto_method == MESL_CRYPTO_METHOD_AES128) {
+		return mavlink_mesl_decrypt_aes128(src, dst, len, maxlen);
+	}
+	if (crypto_method == MESL_CRYPTO_METHOD_USER7) {
+		// User defined encryption:
+		//   XOR with key '0xab', for test.
+		memcpy(
+				dst,
+				src,
+				len);
+		for (uint8_t i = (uint8_t)0; i < len; i++) {
+			dst[i] ^= 0xab;
+		}
+		return (int32_t)len;
 	}
 
-	// User defined encryption:
-	//   XOR with key '0xab', for test.
-	memcpy(
-			dst,
-			src,
-			len);
-	for (uint8_t i = (uint8_t)0; i < len; i++) {
-		dst[i] ^= 0xab;
-	}
-	return (int32_t)len;
+		return (int32_t)-1;
 }
 
 #endif // #ifdef MESL_CRYPTO

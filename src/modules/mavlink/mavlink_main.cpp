@@ -101,6 +101,27 @@ bool Mavlink::_boot_complete = false;
 
 
 // -------------------------------------------------------
+// Include external crypto library
+// -------------------------------------------------------
+
+#ifdef MESL_CRYPTO
+
+// Include 'mesl crypto library', of PX4 autopilot.
+// 'mesl crypto library' has been included at QGC,
+//   with just source-file-copy method, for now.
+
+#include "mc.h"
+
+// Make global variable that 'mesl_crypto_library' use.
+// For PX4, 'key_flag' is on 'se' driver.
+// If build does not include 'se' driver, below line must be uncommented.
+//
+int key_flag = 0;
+
+#endif // #ifdef MESL_CRYPTO
+
+
+// -------------------------------------------------------
 // Implement, for MESL_CRYPTO related things.
 // -------------------------------------------------------
 
@@ -109,6 +130,20 @@ namespace mavlink {
 #endif
 
 #ifdef MESL_MAVLINK_DEBUG
+
+void mavlink_mesl_crypto_rxpl_debug(const char* pl, int len) {
+	unsigned char pl4[4] = {0, };
+	memcpy(
+			(char*)pl4,
+			(const char*)(pl),
+			(len > (uint8_t)4) ? 4 : len);
+	PX4_INFO("  encrypted rx pl4(%02x%02x%02x%02x)",
+			pl4[0],
+			pl4[1],
+			pl4[2],
+			pl4[3]
+			);
+}
 
 // @brief  Getting 'Mavlink' instance using 'mavlink_status_t'.
 // @return '*Mavlink' for success, NULL otherwise.
@@ -223,6 +258,70 @@ uint8_t mavlink_mesl_crypto_condition_f(
 		return status->mesl_crypto_method;
 	}
 	return 0;
+}
+
+// @brief  Function to encrypt MAVLink payload,
+//           with method 'MESL_CRYPTO_METHOD_AES128'.
+// @param  'len': payload length (can be 0).
+// @return Payload length after encryption.
+// @note   "input_len == 0 && output_len == 0",
+//           will be considered as non-encryption.
+//         But, "input len != 0 && output_len == 0",
+//           or "output_len < 0 || output_len > maxlen",
+//           will be considered as error,
+//           MAVLink frame will be sent with zero payload length,
+//           and receiving side can report error,
+//           because the length is zero but encryption iflag is set.
+int32_t mavlink_mesl_encrypt_aes128(
+		const char *src,
+		char *dst,
+		uint8_t len,
+		uint8_t maxlen
+		)
+{
+	AES aes_ctr;
+	// px4_usleep((useconds_t) 3000);
+	Initialize_AES128_CTR(&aes_ctr);
+	Encrypt_AES128_CTR(
+			&aes_ctr,
+			0,
+			(uint8_t*)src,
+			(int)len,
+			(uint8_t*)dst
+			);
+	return (int32_t)len;
+}
+
+// @brief  Function to decrypt MAVLink payload,
+//           with method 'MESL_CRYPTO_METHOD_AES128'.
+// @param  'len': payload length.
+//         If 'len' is zero,
+//           this function should return '-1'.
+// @return Payload length after decryption (zero is valid result).
+//         If "output_len < 0 || output_len > maxlen",
+//           will be considered as error,
+//           one example is for invalue 'crypto_method'.
+int32_t mavlink_mesl_decrypt_aes128(
+		const char *src,
+		char *dst,
+		uint8_t len,
+		uint8_t maxlen
+		)
+{
+	AES aes_ctr;
+	// px4_usleep((useconds_t) 3000);
+#ifdef MESL_MAVLINK_DEBUG
+mavlink_mesl_crypto_rxpl_debug(src, (int)len);
+#endif
+	Initialize_AES128_CTR(&aes_ctr);
+	Decrypt_AES128_CTR(
+			&aes_ctr,
+			0,
+			(uint8_t*)src,
+			(int)len,
+			(uint8_t*)dst
+			);
+	return (int32_t)len;
 }
 
 // PX4_ERR("%s", str)
