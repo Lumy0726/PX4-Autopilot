@@ -77,6 +77,24 @@
 
 
 #include <mavlink_types.h>
+
+
+
+#ifdef MESL_MAV_TEBUG
+
+void mav_tebug_fi_start(mavlink_status_t* status);
+void mav_tebug_send_end(mavlink_status_t* status);
+void mav_tebug_parse_start(mavlink_status_t* status);
+void mav_tebug_parse_end(mavlink_status_t* status);
+#define MESL_MAV_TEBUG_FI_SEND_START(status) mav_tebug_fi_start(status);
+#define MESL_MAV_TEBUG_SEND_END(status) mav_tebug_send_end(status);
+#define MESL_MAV_TEBUG_PARSE_START(status) mav_tebug_parse_start(status);
+#define MESL_MAV_TEBUG_PARSE_END(rxmsg, status) mav_tebug_parse_end(status);
+
+#endif // #ifdef MESL_MAV_TEBUG
+
+
+
 #include <unistd.h>
 
 __BEGIN_DECLS

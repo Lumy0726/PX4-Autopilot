@@ -125,6 +125,141 @@ int key_flag = 0;
 // Implement, for MESL_CRYPTO related things.
 // -------------------------------------------------------
 
+
+
+#ifdef MESL_MAV_TEBUG
+
+/*
+#include <sys/time.h>
+
+//
+// unixmillis - getting milliseconds since the epoch, using 'gettimeofday'
+uint64_t unixmillis() {
+	uint64_t ret;
+	struct timeval t;
+	gettimeofday(&t, NULL);
+	ret = (uint64_t)(t.tv_sec) * 1000;
+	ret += (uint64_t)(t.tv_usec) / 1000;
+	return ret;
+}
+*/
+
+
+static uint64_t tebug_before;
+static uint64_t tebug_last;
+static uint64_t tebug_fi_start;
+static uint64_t tebug_parse_start;;
+
+static uint64_t tebug_send_min;
+static uint64_t tebug_send_sum;
+static uint64_t tebug_send_count;
+static uint64_t tebug_send_max;
+static uint64_t tebug_parse_min;
+static uint64_t tebug_parse_sum;
+static uint64_t tebug_parse_count;
+static uint64_t tebug_parse_max;
+
+static mavlink_status_t* statusForTebug = (mavlink_status_t*)0;
+
+
+static inline int tebug_get_channel(
+		const mavlink_status_t* status
+		)
+{
+	for (int i = 0; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
+		if (
+				mavlink_module_instances[i]->get_status() ==
+				status
+			 ) {
+			return (int)(mavlink_module_instances[i]->get_channel());
+		}
+	}
+	return -1;
+}
+
+
+void tebug_print() {
+	tebug_before = tebug_last;
+	if (tebug_send_count && tebug_parse_count) {
+		PX4_INFO("tebug_print: (%ld/%f/%ld)[%ld] (%ld/%f/%ld)[%ld]",
+				(long int)tebug_send_min,
+				((double)tebug_send_sum / tebug_send_count),
+				(long int)tebug_send_max,
+				(long int)tebug_send_count,
+				(long int)tebug_parse_min,
+				((double)tebug_parse_sum / tebug_parse_count),
+				(long int)tebug_parse_max,
+				(long int)tebug_parse_count
+				);
+	}
+}
+
+void mav_tebug_fi_start(mavlink_status_t* status) {
+	uint64_t cur = hrt_absolute_time();
+	if (statusForTebug != status) {
+		return;
+	}
+	// tebug_last = unixmillis();
+	tebug_last = cur;
+	tebug_fi_start = cur;
+}
+void mav_tebug_send_end(mavlink_status_t* status) {
+	uint64_t cur = hrt_absolute_time();
+	if (statusForTebug != status) {
+		return;
+	}
+	// tebug_last = unixmillis();
+	tebug_last = cur;
+	uint64_t delta = (uint64_t)(cur - tebug_fi_start);
+	if (delta < (unsigned int)2000000) {
+		if (delta < tebug_send_min) { tebug_send_min = delta; } 
+		if (tebug_send_max < delta) { tebug_send_max = delta; } 
+		tebug_send_sum += delta;
+		tebug_send_count++;
+	}
+	if ((unsigned int)(tebug_last - tebug_before) > (unsigned int)1000000) {
+		tebug_print();
+	}
+}
+void mav_tebug_parse_start(mavlink_status_t* status) {
+	uint64_t cur = hrt_absolute_time();
+	if (statusForTebug != status) {
+#ifdef MESL_CRYPTO_____
+		if (status->mesl_crypto_method) {
+			statusForTebug = status;
+		}
+		else { return; }
+#else
+		statusForTebug = status;
+#endif
+	}
+	// tebug_last = unixmillis();
+	tebug_last = cur;
+	tebug_parse_start = cur;
+}
+void mav_tebug_parse_end(mavlink_status_t* status) {
+	uint64_t cur = hrt_absolute_time();
+	if (statusForTebug != status) {
+		return;
+	}
+	// tebug_last = unixmillis();
+	tebug_last = cur;
+	uint64_t delta = (uint64_t)(cur - tebug_parse_start);
+	if (delta < (unsigned int)2000000) {
+		if (delta < tebug_parse_min) { tebug_parse_min = delta; } 
+		if (tebug_parse_max < delta) { tebug_parse_max = delta; } 
+		tebug_parse_sum += delta;
+		tebug_parse_count++;
+	}
+	if ((int)(tebug_last - tebug_before) > 1000000) {
+		tebug_print();
+	}
+}
+
+#endif // #ifdef MESL_MAV_TEBUG
+
+
+
 #ifdef MAVLINK_USE_CXX_NAMESPACE
 namespace mavlink {
 #endif
