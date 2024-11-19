@@ -1,6 +1,6 @@
 [submodule "src/modules/mavlink/mavlink"]
 	path = src/modules/mavlink/mavlink
-	url = file:///home/lmj/securemav/.mavlink.bare.git
+	url = https://github.com/Lumy0726/mavlink.git
 	branch = securemav
 [submodule "src/drivers/uavcan/libuavcan"]
 	path = src/drivers/uavcan/libuavcan
