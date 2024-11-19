@@ -1,34 +1,25 @@
-# PX4 Drone Autopilot
+# PX4 Drone Autopilot for secure mavlink
+This repository(branch) contains 'secure mavlink' implementation.
+Based version is [v1.15.0](https://github.com/Lumy0726/PX4-Autopilot/releases/tag/v1.15.0/).
+Please see the below link for the original README document.
 
-[![Releases](https://img.shields.io/github/release/PX4/PX4-Autopilot.svg)](https://github.com/PX4/PX4-Autopilot/releases) [![DOI](https://zenodo.org/badge/22634/PX4/PX4-Autopilot.svg)](https://zenodo.org/badge/latestdoi/22634/PX4/PX4-Autopilot)
+[README](./README_orig.md/)
 
-[![Nuttx Targets](https://github.com/PX4/PX4-Autopilot/workflows/Nuttx%20Targets/badge.svg)](https://github.com/PX4/PX4-Autopilot/actions?query=workflow%3A%22Nuttx+Targets%22?branch=master) [![SITL Tests](https://github.com/PX4/PX4-Autopilot/workflows/SITL%20Tests/badge.svg?branch=master)](https://github.com/PX4/PX4-Autopilot/actions?query=workflow%3A%22SITL+Tests%22)
+# Secure mavlink
+Below list is implementations to enhance security of mavlink protocol.  
+* Apply payload encryption of MAVLink protocol.
 
-[![Discord Shield](https://discordapp.com/api/guilds/1022170275984457759/widget.png?style=shield)](https://discord.gg/dronecode)
+## Payload encryption of MAVLink protocol
+Below list is implementations to apply payload encryption.
+* Modify 'src/modules/mavlink/mavlink' submodule commit, to use encryption supported MAVLink protocol.  
+Actual implementation is on [pymavlink](https://github.com/Lumy0726/pymavlink/tree/securemav/) submodule.  
+* To use AES128 CTR encryption method, include external library.  
+[original library implementation branch](https://github.com/Lumy0726/PX4-Autopilot/tree/mesl_lib/)  
+[library implementation branch, rebased to v1.15.0](https://github.com/Lumy0726/PX4-Autopilot/tree/mesl_lib_rbd/)  
+[crypto module directory](./src/modules/mesl_crypto/)  
+And disable 'se' driver of external library, from build configuration.
+* Modify 'mavlink' module of PX4 to enable encryption.  
+[mavlink module directory](./src/modules/mavlink/)  
+Encryption can be enabled, using startup scripts. This can be configured per MAVLink channel. Therefore startup script and 'cdcacm_autostart' driver also has been modified.  
+Some debugging code also has been implemented, and can be toggled using C macro variable.  
 
-This repository holds the [PX4](http://px4.io) flight control solution for drones, with the main applications located in the [src/modules](https://github.com/PX4/PX4-Autopilot/tree/main/src/modules) directory. It also contains the PX4 Drone Middleware Platform, which provides drivers and middleware to run drones.
-
-PX4 is highly portable, OS-independent and supports Linux, NuttX and MacOS out of the box.
-
-* Official Website: http://px4.io (License: BSD 3-clause, [LICENSE](https://github.com/PX4/PX4-Autopilot/blob/main/LICENSE))
-* [Supported airframes](https://docs.px4.io/main/en/airframes/airframe_reference.html) ([portfolio](https://px4.io/ecosystem/commercial-systems/)):
-  * [Multicopters](https://docs.px4.io/main/en/frames_multicopter/)
-  * [Fixed wing](https://docs.px4.io/main/en/frames_plane/)
-  * [VTOL](https://docs.px4.io/main/en/frames_vtol/)
-  * [Autogyro](https://docs.px4.io/main/en/frames_autogyro/)
-  * [Rover](https://docs.px4.io/main/en/frames_rover/)
-  * many more experimental types (Blimps, Boats, Submarines, High altitude balloons, etc)
-* Releases: [Downloads](https://github.com/PX4/PX4-Autopilot/releases)
-
-
-# Secure PX4 Autopilot
-
-AES, SHA256, RSA1024 등 암호화 모듈이 적용된 PX4 package.
-
-* 모듈 경로 :  
-`/module/mesl_crypto`
-
-* Git clone 후 :  
-`git remote add upstream https://github.com/PX4/PX4-Autopilot.git`  
-`git fetch upstream`  
-`git fetch upstream --tags`  
